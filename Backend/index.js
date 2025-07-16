@@ -2,9 +2,11 @@ require("dotenv").config(); // Must be at the top
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const authRoutes = require("./routes/authRoute");
+// const authRoutes = require("./routes/authRoute");
 const { getVoices } = require("./controllers/audioController");
 const audioRoutes = require("./routes/audioRoutes");
+const formRoutes = require("./routes/formRoutes");
+
 const path = require("path");
 const app = express();
 const PORT = process.env.PORT;
@@ -31,6 +33,9 @@ app.use("/api/audios", require("./routes/audioRoutes"));
 app.use("/api", audioRoutes);
 
 app.use("/audios", express.static(path.join(__dirname, "audios")));
+
+// Route For Storing Answers in Backend
+app.use("/api", formRoutes);
 
 //   Creating the server
 app.listen(PORT, () => {

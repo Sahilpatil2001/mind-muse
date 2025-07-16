@@ -1,0 +1,3 @@
+file 'C:/Users/ADMIN/Desktop/Mind-Muse-Echoes/Backend/audios/temp_sentence_1752662364245_0.mp3'
+file 'C:/Users/ADMIN/Desktop/Mind-Muse-Echoes/Backend/audios/silence_2s.mp3'
+file 'C:/Users/ADMIN/Desktop/Mind-Muse-Echoes/Backend/audios/temp_sentence_1752662364245_1.mp3'

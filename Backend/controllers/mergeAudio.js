@@ -8,32 +8,32 @@ const audiosDir = path.join(__dirname, "../audios");
 if (!fs.existsSync(audiosDir)) fs.mkdirSync(audiosDir);
 
 exports.mergeDynamicAudio = async (req, res) => {
-  const { inputText, voiceId } = req.body;
-  console.log("🧠 Backend input:", req.body);
-
-  if (!inputText || !voiceId) {
-    return res
-      .status(400)
-      .json({ error: "inputText and voiceId are required" });
-  }
-
   try {
-    const lines = inputText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const { voiceId, segments } = req.body;
 
-    const sentenceChunks = lines.map((line) => {
+    if (
+      !voiceId ||
+      !segments ||
+      !Array.isArray(segments) ||
+      segments.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({ error: "voiceId and non-empty segments array are required" });
+    }
+
+    // Parse segments into { sentence, pause }
+    const sentenceChunks = segments.map((item) => {
+      const line = item.text || "";
       const pauseMatch = line.match(/\((\d+)s-pause\)/i);
       const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : 2;
       const sentence = line.replace(/\s*\(\d+s-pause\)/i, "").trim();
       return { sentence, pause };
     });
 
-    const audioFiles = [];
+    // Prepare silence files
     const silenceFiles = {};
 
-    // Generate silence files only once per duration
     for (const { pause } of sentenceChunks) {
       if (!silenceFiles[pause]) {
         const silencePath = path.join(audiosDir, `silence_${pause}s.mp3`);
@@ -57,11 +57,31 @@ exports.mergeDynamicAudio = async (req, res) => {
       }
     }
 
-    // Generate sentence audios temporarily
+    const audioFiles = [];
+    // let lastRequestId = "";
+
     for (let i = 0; i < sentenceChunks.length; i++) {
       const { sentence, pause } = sentenceChunks[i];
-      const sentencePath = path.join(audiosDir, `temp_sentence_${i}.mp3`);
-      await generateAudio(sentence, sentencePath, voiceId);
+      const previousText = i > 0 ? sentenceChunks[i - 1].sentence : null;
+      const nextText =
+        i < sentenceChunks.length - 1 ? sentenceChunks[i + 1].sentence : null;
+
+      const sentencePath = path.join(
+        audiosDir,
+        `temp_sentence_${Date.now()}_${i}.mp3`
+      );
+
+      // ✅ Generate audio for this sentence
+      const requestId = await generateAudio(
+        sentence,
+        sentencePath,
+        voiceId,
+        previousText,
+        nextText
+      );
+
+      // if (requestId) lastRequestId = requestId;
+
       audioFiles.push(sentencePath);
 
       if (i < sentenceChunks.length - 1) {
@@ -69,14 +89,23 @@ exports.mergeDynamicAudio = async (req, res) => {
       }
     }
 
-    // Create concat.txt
+    // ✅ Check all files exist before merging
+    for (const file of audioFiles) {
+      if (!fs.existsSync(file)) {
+        console.error("Missing audio file:", file);
+        return res.status(500).json({ error: `Audio file not found: ${file}` });
+      }
+    }
+
+    // ✅ Write concat file
     const concatTxt = audioFiles
-      .map((f) => `file '${f.replace(/\\/g, "/")}'`)
+      .map((filePath) => `file '${filePath.replace(/\\/g, "/")}'`)
       .join("\n");
+
     const concatFilePath = path.join(audiosDir, `concat_${Date.now()}.txt`);
     fs.writeFileSync(concatFilePath, concatTxt);
 
-    // Merge into final output
+    // ✅ Merge using ffmpeg
     const outputPath = path.join(audiosDir, `Audio_${Date.now()}.mp3`);
     execFile(
       ffmpegPath,
@@ -93,26 +122,38 @@ exports.mergeDynamicAudio = async (req, res) => {
         outputPath,
       ],
       (err) => {
-        if (err) {
-          console.error("FFmpeg merge error:", err);
-          return res.status(500).json({ error: "Failed to merge audio." });
-        }
-
-        // Clean up temp sentence files and concat.txt
-        audioFiles.forEach((file) => {
-          if (file.includes("temp_sentence_") && fs.existsSync(file)) {
-            fs.unlinkSync(file);
+        try {
+          if (err) {
+            console.error("FFmpeg merge error:", err);
+            return res.status(500).json({ error: "Failed to merge audio." });
           }
-        });
-        fs.unlinkSync(concatFilePath);
 
-        const buffer = fs.readFileSync(outputPath);
-        res.setHeader("Content-Type", "audio/mpeg");
-        res.send(buffer);
+          // ✅ Read merged audio
+          const audioBuffer = fs.readFileSync(outputPath);
+
+          // ✅ Cleanup temp files
+          audioFiles.forEach((file) => {
+            if (file.includes("temp_sentence_") && fs.existsSync(file)) {
+              fs.unlinkSync(file);
+            }
+          });
+          if (fs.existsSync(concatFilePath)) {
+            fs.unlinkSync(concatFilePath);
+          }
+          // Optionally delete merged audio file after sending
+          // fs.unlinkSync(outputPath);
+
+          // res.setHeader("Content-Type", "audio/mpeg");
+          // res.setHeader("x-request-id", lastRequestId || "unknown");
+          res.send(audioBuffer);
+        } catch (cleanupErr) {
+          console.error("Cleanup/send error:", cleanupErr);
+          res.status(500).json({ error: "Error processing audio response." });
+        }
       }
     );
-  } catch (err) {
-    console.error("Error in mergeDynamicAudio:", err);
+  } catch (error) {
+    console.error("Error in mergeDynamicAudio:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
