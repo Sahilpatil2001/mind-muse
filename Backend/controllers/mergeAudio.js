@@ -9,33 +9,41 @@ if (!fs.existsSync(audiosDir)) fs.mkdirSync(audiosDir);
 
 exports.mergeDynamicAudio = async (req, res) => {
   try {
-    const { voiceId, segments } = req.body;
+    const { voiceId, text } = req.body;
 
-    if (
-      !voiceId ||
-      !segments ||
-      !Array.isArray(segments) ||
-      segments.length === 0
-    ) {
-      return res
-        .status(400)
-        .json({ error: "voiceId and non-empty segments array are required" });
+    if (!voiceId || !text || typeof text !== "string") {
+      return res.status(400).json({ error: "voiceId and text are required" });
     }
 
-    // Parse segments into { sentence, pause }
-    const sentenceChunks = segments.map((item) => {
-      const line = item.text || "";
+    // ✅ Parse text into segments
+    const rawLines = text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    const sentenceChunks = rawLines.map((line, index, arr) => {
       const pauseMatch = line.match(/\((\d+)s-pause\)/i);
-      const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : 2;
-      const sentence = line.replace(/\s*\(\d+s-pause\)/i, "").trim();
-      return { sentence, pause };
+      const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : null; // null = no pause
+      const sentence = line.replace(/\(\d+s-pause\)/i, "").trim();
+
+      return {
+        sentence,
+        pause,
+        previousText:
+          index > 0
+            ? arr[index - 1].replace(/\(\d+s-pause\)/i, "").trim()
+            : null,
+        nextText:
+          index < arr.length - 1
+            ? arr[index + 1].replace(/\(\d+s-pause\)/i, "").trim()
+            : null,
+      };
     });
 
-    // Prepare silence files
+    // ✅ Prepare silence files only if pause is specified
     const silenceFiles = {};
-
     for (const { pause } of sentenceChunks) {
-      if (!silenceFiles[pause]) {
+      if (pause && !silenceFiles[pause]) {
         const silencePath = path.join(audiosDir, `silence_${pause}s.mp3`);
         if (!fs.existsSync(silencePath)) {
           execFileSync(ffmpegPath, [
@@ -58,21 +66,17 @@ exports.mergeDynamicAudio = async (req, res) => {
     }
 
     const audioFiles = [];
-    // let lastRequestId = "";
 
     for (let i = 0; i < sentenceChunks.length; i++) {
-      const { sentence, pause } = sentenceChunks[i];
-      const previousText = i > 0 ? sentenceChunks[i - 1].sentence : null;
-      const nextText =
-        i < sentenceChunks.length - 1 ? sentenceChunks[i + 1].sentence : null;
+      const { sentence, pause, previousText, nextText } = sentenceChunks[i];
 
       const sentencePath = path.join(
         audiosDir,
         `temp_sentence_${Date.now()}_${i}.mp3`
       );
 
-      // ✅ Generate audio for this sentence
-      const requestId = await generateAudio(
+      // ✅ Generate audio for sentence
+      await generateAudio(
         sentence,
         sentencePath,
         voiceId,
@@ -80,16 +84,15 @@ exports.mergeDynamicAudio = async (req, res) => {
         nextText
       );
 
-      // if (requestId) lastRequestId = requestId;
-
       audioFiles.push(sentencePath);
 
-      if (i < sentenceChunks.length - 1) {
+      // ✅ Insert pause (only if pause was explicitly given and not the last line)
+      if (pause && i < sentenceChunks.length - 1) {
         audioFiles.push(silenceFiles[pause]);
       }
     }
 
-    // ✅ Check all files exist before merging
+    // ✅ Ensure all audio files exist
     for (const file of audioFiles) {
       if (!fs.existsSync(file)) {
         console.error("Missing audio file:", file);
@@ -97,7 +100,7 @@ exports.mergeDynamicAudio = async (req, res) => {
       }
     }
 
-    // ✅ Write concat file
+    // ✅ Write concat list
     const concatTxt = audioFiles
       .map((filePath) => `file '${filePath.replace(/\\/g, "/")}'`)
       .join("\n");
@@ -105,8 +108,8 @@ exports.mergeDynamicAudio = async (req, res) => {
     const concatFilePath = path.join(audiosDir, `concat_${Date.now()}.txt`);
     fs.writeFileSync(concatFilePath, concatTxt);
 
-    // ✅ Merge using ffmpeg
     const outputPath = path.join(audiosDir, `Audio_${Date.now()}.mp3`);
+
     execFile(
       ffmpegPath,
       [
@@ -128,23 +131,20 @@ exports.mergeDynamicAudio = async (req, res) => {
             return res.status(500).json({ error: "Failed to merge audio." });
           }
 
-          // ✅ Read merged audio
           const audioBuffer = fs.readFileSync(outputPath);
 
-          // ✅ Cleanup temp files
+          // ✅ Cleanup
           audioFiles.forEach((file) => {
             if (file.includes("temp_sentence_") && fs.existsSync(file)) {
               fs.unlinkSync(file);
             }
           });
-          if (fs.existsSync(concatFilePath)) {
-            fs.unlinkSync(concatFilePath);
-          }
-          // Optionally delete merged audio file after sending
+          if (fs.existsSync(concatFilePath)) fs.unlinkSync(concatFilePath);
+
+          // Optionally delete merged file after sending
           // fs.unlinkSync(outputPath);
 
-          // res.setHeader("Content-Type", "audio/mpeg");
-          // res.setHeader("x-request-id", lastRequestId || "unknown");
+          res.setHeader("Content-Type", "audio/mpeg");
           res.send(audioBuffer);
         } catch (cleanupErr) {
           console.error("Cleanup/send error:", cleanupErr);

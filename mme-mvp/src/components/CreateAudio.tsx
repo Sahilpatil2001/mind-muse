@@ -47,67 +47,26 @@ const CreateAudio: FC<CreateAudioProps> = ({ BASE_URL }) => {
 
   const playAudio = async () => {
     if (!text.trim()) return alert("Please enter at least two sentences.");
-
     setLoading(true);
     setAudioUrl(null);
 
     try {
-      // Split by lines
-      const rawLines = text
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-
-      // Parse lines into segments: text + pause + context
-      const segments = rawLines.map((line, index, arr) => {
-        const pauseMatch = line.match(/\((\d+)s-pause\)/i);
-        const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : null;
-        const cleanedText = line.replace(/\(\d+s-pause\)/i, "").trim();
-
-        return {
-          text: cleanedText,
-          pause,
-          previous_text:
-            index > 0
-              ? arr[index - 1].replace(/\(\d+s-pause\)/i, "").trim()
-              : null,
-          next_text:
-            index < arr.length - 1
-              ? arr[index + 1].replace(/\(\d+s-pause\)/i, "").trim()
-              : null,
-        };
-      });
-
       const res = await fetch(`${BASE_URL}/api/merge-audio`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           voiceId: selectedVoice,
-          segments,
+          text, // just plain text including optional (3s-pause)
         }),
       });
 
-      if (!res.ok) {
-        const result = await res.text();
-        console.error("Backend error:", result);
-        alert("Failed to generate audio.");
-        return;
-      }
+      if (!res.ok) throw new Error("Failed to generate audio.");
 
       const blob = await res.blob();
       setAudioUrl(URL.createObjectURL(blob));
-
-      // Optional: log ElevenLabs request ID
-      const requestId = res.headers.get("x-request-id");
-      if (requestId) {
-        console.log("✅ ElevenLabs Request ID:", requestId);
-      }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("ERROR:", error.message);
-      } else {
-        console.error("Unknown error occurred while fetching audio.");
-      }
+    } catch (error) {
+      console.error("ERROR:", error);
+      alert("Failed to generate audio.");
     } finally {
       setLoading(false);
     }
