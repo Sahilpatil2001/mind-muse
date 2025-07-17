@@ -1,0 +1,165 @@
+import type { FC, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
+import Button from "./common/Button";
+
+interface Voice {
+  voice_id: string;
+  name: string;
+}
+
+interface CreateAudioProps {
+  BASE_URL: string;
+}
+
+const CreateAudio: FC<CreateAudioProps> = ({ BASE_URL }) => {
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
+  const [text, setText] = useState<string>("");
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const BASE_URL = "http://localhost:8000";
+    const fetchVoices = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/voices`);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (data.voices && data.voices.length > 0) {
+          setVoices(data.voices);
+          setSelectedVoice(data.voices[0].voice_id);
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Failed to fetch voices:", error.message);
+        } else {
+          console.error("Unknown error occurred while fetching voices.");
+        }
+      }
+    };
+
+    fetchVoices();
+  }, [BASE_URL]);
+
+  const playAudio = async () => {
+    if (!text.trim()) return alert("Please enter at least two sentences.");
+
+    setLoading(true);
+    setAudioUrl(null);
+
+    try {
+      // Split by lines
+      const rawLines = text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+      // Parse lines into segments: text + pause + context
+      const segments = rawLines.map((line, index, arr) => {
+        const pauseMatch = line.match(/\((\d+)s-pause\)/i);
+        const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : null;
+        const cleanedText = line.replace(/\(\d+s-pause\)/i, "").trim();
+
+        return {
+          text: cleanedText,
+          pause,
+          previous_text:
+            index > 0
+              ? arr[index - 1].replace(/\(\d+s-pause\)/i, "").trim()
+              : null,
+          next_text:
+            index < arr.length - 1
+              ? arr[index + 1].replace(/\(\d+s-pause\)/i, "").trim()
+              : null,
+        };
+      });
+
+      const res = await fetch(`${BASE_URL}/api/merge-audio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          voiceId: selectedVoice,
+          segments,
+        }),
+      });
+
+      if (!res.ok) {
+        const result = await res.text();
+        console.error("Backend error:", result);
+        alert("Failed to generate audio.");
+        return;
+      }
+
+      const blob = await res.blob();
+      setAudioUrl(URL.createObjectURL(blob));
+
+      // Optional: log ElevenLabs request ID
+      const requestId = res.headers.get("x-request-id");
+      if (requestId) {
+        console.log("✅ ElevenLabs Request ID:", requestId);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("ERROR:", error.message);
+      } else {
+        console.error("Unknown error occurred while fetching audio.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full flex">
+      <main className="w-1/2 py-10 px-10">
+        <div className="w-full rounded-xl shadow-lg px-10 space-y-10">
+          <h1 className="text-4xl font-semibold text-start">
+            Enter Script For Audio
+          </h1>
+
+          <textarea
+            rows={10}
+            className="w-full border border-[#ffffff6c] rounded-md p-3 outline-none"
+            placeholder="Enter sentences separated by periods."
+            value={text}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+              setText(e.target.value)
+            }
+          />
+
+          <select
+            className="w-full border border-[#ffffff6c] rounded-md p-3"
+            value={selectedVoice}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              setSelectedVoice(e.target.value)
+            }
+          >
+            {voices.map((voice) => (
+              <option
+                key={voice.voice_id}
+                value={voice.voice_id}
+                className="bg-black"
+              >
+                {voice.name}
+              </option>
+            ))}
+          </select>
+
+          <Button onClick={playAudio} disabled={loading} className="w-full">
+            {loading ? "Generating..." : "Get Audio"}
+          </Button>
+
+          {audioUrl && (
+            <audio controls autoPlay src={audioUrl} className="w-full mt-4" />
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default CreateAudio;

@@ -1,0 +1,18 @@
+import type { FC } from "react";
+import { Outlet } from "react-router-dom";
+import AsideBar from "../components/AsideBar";
+
+const MainLayout: FC = () => {
+  return (
+    <>
+      <div className="w-full flex items-center">
+        <AsideBar />
+        <div className="w-full flex">
+          <Outlet />
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default MainLayout;

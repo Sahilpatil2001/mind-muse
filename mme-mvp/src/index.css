@@ -1,0 +1,24 @@
+@import url(https://fonts.googleapis.com/css?family=Plus+Jakarta+Sans:200,300,regular,500,600,700,800,200italic,300italic,italic,500italic,600italic,700italic,800italic);
+@import "tailwindcss";
+
+body {
+  background-color: #030014;
+  color: white;
+  font-family: "Plus Jakarta Sans", serif;
+}
+
+@theme {
+  --font-regular: Plus Jakarta Sans;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
+}
+
+select::-ms-expand {
+  display: none;
+}
+select::-webkit-inner-spin-button,
+select::-webkit-calendar-picker-indicator {
+  margin-right: 20px;
+}

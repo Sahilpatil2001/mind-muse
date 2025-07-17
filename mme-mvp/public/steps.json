@@ -1,0 +1,95 @@
+{
+  "steps": [
+    {
+      "stepNumber": 1,
+      "stepTitle": "Choose Your Transformation Theme",
+      "question": "What is the main theme or area of life you want to focus on?",
+      "type": "radio",
+      "isRequired": true,
+      "options": [
+        { "label": "Health & Healing", "value": "health" },
+        { "label": "Self-Mastery", "value": "discipline" },
+        { "label": "Wealth", "value": "money" },
+        { "label": "Confidence & Self-Worth", "value": "confidence" },
+        { "label": "Love & Relationships", "value": "love" },
+        { "label": "Spiritual Growth", "value": "spirituality" },
+        { "label": "Custom Goal", "value": "custom" }
+      ]
+    },
+    {
+      "stepNumber": 2,
+      "stepTitle": "Define Your Goal",
+      "question": "Describe your personal goal or what you're trying to achieve.",
+      "type": "textarea",
+      "isRequired": true,
+      "info": ""
+    },
+    {
+      "stepNumber": 3,
+      "stepTitle": "Your Vision",
+      "question": "What is the long-term outcome or future you are aiming for?",
+      "type": "textarea",
+      "isRequired": false,
+      "info": ""
+    },
+    {
+      "stepNumber": 4,
+      "stepTitle": "Choose Emotions",
+      "question": "How do you want to feel during and after listening?",
+      "type": "multi-select",
+      "isRequired": true,
+      "options": [
+        { "label": "Calm", "value": "calm" },
+        { "label": "Empowered", "value": "empowered" },
+        { "label": "Focused", "value": "focused" },
+        { "label": "Grateful", "value": "grateful" },
+        { "label": "Connected", "value": "connected" },
+        { "label": "Motivated", "value": "motivated" }
+      ]
+    },
+    {
+      "stepNumber": 5,
+      "stepTitle": "Audio Length",
+      "question": "How long should your audio be?",
+      "type": "radio",
+      "isRequired": true,
+      "options": [
+        { "label": "Short (1–2 minutes)", "value": "short" },
+        { "label": "Medium (3–5 minutes)", "value": "medium" },
+        { "label": "Long (6–10 minutes)", "value": "long" },
+        { "label": "Extended (10–20 minutes)", "value": "extended" }
+      ]
+    },
+    {
+      "stepNumber": 6,
+      "stepTitle": "Voice Preference",
+      "question": "What kind of voice would you like?",
+      "type": "select",
+      "isRequired": true,
+      "options": [
+        { "label": "Male – Deep & Powerful", "value": "male_deep" },
+        { "label": "Male – Soft & Calm", "value": "male_calm" },
+        { "label": "Female – Warm & Gentle", "value": "female_gentle" },
+        {
+          "label": "Female – Confident & Inspiring",
+          "value": "female_inspiring"
+        }
+      ]
+    },
+    {
+      "stepNumber": 7,
+      "stepTitle": "Background Music",
+      "question": "Choose your background music style",
+      "type": "radio",
+      "isRequired": true,
+      "options": [
+        { "label": "Ambient Healing", "value": "ambient" },
+        { "label": "Calm Piano", "value": "piano" },
+        { "label": "Nature Sounds", "value": "nature" },
+        { "label": "Spiritual Chimes", "value": "spiritual" },
+        { "label": "Lo-fi Beats", "value": "lofi" },
+        { "label": "No Music", "value": "none" }
+      ]
+    }
+  ]
+}
