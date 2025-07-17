@@ -56,11 +56,23 @@ const CreateAudio: FC<CreateAudioProps> = ({ BASE_URL }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           voiceId: selectedVoice,
-          text, // just plain text including optional (3s-pause)
+          text, // plain text with optional (3s-pause)
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to generate audio.");
+      if (!res.ok) {
+        throw new Error("Failed to generate audio.");
+      }
+
+      // Read the request-id header after checking success
+      const requestId = res.headers.get("request-id");
+      // Convert Headers to an array and print
+
+      if (requestId) {
+        console.log("✅ ElevenLabs Request ID:", requestId);
+      } else {
+        console.warn("⚠️ No request-id found in response headers.");
+      }
 
       const blob = await res.blob();
       setAudioUrl(URL.createObjectURL(blob));

@@ -2,7 +2,6 @@ require("dotenv").config(); // Must be at the top
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-// const authRoutes = require("./routes/authRoute");
 const { getVoices } = require("./controllers/audioController");
 const audioRoutes = require("./routes/audioRoutes");
 const formRoutes = require("./routes/formRoutes");

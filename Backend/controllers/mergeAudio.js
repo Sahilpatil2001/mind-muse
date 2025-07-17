@@ -15,7 +15,6 @@ exports.mergeDynamicAudio = async (req, res) => {
       return res.status(400).json({ error: "voiceId and text are required" });
     }
 
-    // ✅ Parse text into segments
     const rawLines = text
       .split("\n")
       .map((line) => line.trim())
@@ -23,7 +22,7 @@ exports.mergeDynamicAudio = async (req, res) => {
 
     const sentenceChunks = rawLines.map((line, index, arr) => {
       const pauseMatch = line.match(/\((\d+)s-pause\)/i);
-      const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : null; // null = no pause
+      const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : null;
       const sentence = line.replace(/\(\d+s-pause\)/i, "").trim();
 
       return {
@@ -40,7 +39,6 @@ exports.mergeDynamicAudio = async (req, res) => {
       };
     });
 
-    // ✅ Prepare silence files only if pause is specified
     const silenceFiles = {};
     for (const { pause } of sentenceChunks) {
       if (pause && !silenceFiles[pause]) {
@@ -66,6 +64,7 @@ exports.mergeDynamicAudio = async (req, res) => {
     }
 
     const audioFiles = [];
+    const requestIds = [];
 
     for (let i = 0; i < sentenceChunks.length; i++) {
       const { sentence, pause, previousText, nextText } = sentenceChunks[i];
@@ -75,24 +74,29 @@ exports.mergeDynamicAudio = async (req, res) => {
         `temp_sentence_${Date.now()}_${i}.mp3`
       );
 
-      // ✅ Generate audio for sentence
-      await generateAudio(
-        sentence,
-        sentencePath,
-        voiceId,
-        previousText,
-        nextText
-      );
+      const { requestId: resRequestId, outputPath: savedPath } =
+        await generateAudio(
+          sentence,
+          sentencePath,
+          voiceId,
+          previousText,
+          nextText
+        );
 
-      audioFiles.push(sentencePath);
+      if (resRequestId) {
+        requestIds.push(resRequestId);
+      } else {
+        console.warn("⚠️ No request-id returned for:", sentence);
+      }
 
-      // ✅ Insert pause (only if pause was explicitly given and not the last line)
+      audioFiles.push(savedPath);
+
       if (pause && i < sentenceChunks.length - 1) {
         audioFiles.push(silenceFiles[pause]);
       }
     }
 
-    // ✅ Ensure all audio files exist
+    // Validate audio files
     for (const file of audioFiles) {
       if (!fs.existsSync(file)) {
         console.error("Missing audio file:", file);
@@ -100,7 +104,6 @@ exports.mergeDynamicAudio = async (req, res) => {
       }
     }
 
-    // ✅ Write concat list
     const concatTxt = audioFiles
       .map((filePath) => `file '${filePath.replace(/\\/g, "/")}'`)
       .join("\n");
@@ -133,7 +136,7 @@ exports.mergeDynamicAudio = async (req, res) => {
 
           const audioBuffer = fs.readFileSync(outputPath);
 
-          // ✅ Cleanup
+          // Cleanup temp files
           audioFiles.forEach((file) => {
             if (file.includes("temp_sentence_") && fs.existsSync(file)) {
               fs.unlinkSync(file);
@@ -141,11 +144,14 @@ exports.mergeDynamicAudio = async (req, res) => {
           });
           if (fs.existsSync(concatFilePath)) fs.unlinkSync(concatFilePath);
 
-          // Optionally delete merged file after sending
-          // fs.unlinkSync(outputPath);
+          // ✅ Set only the last 3 request IDs
+          if (requestIds.length > 0) {
+            const lastThree = requestIds.slice(-3).join(",");
+            res.setHeader("request-id", lastThree);
+            res.setHeader("Access-Control-Expose-Headers", "request-id");
+          }
 
-          res.setHeader("Content-Type", "audio/mpeg");
-          res.send(audioBuffer);
+          res.status(200).send(audioBuffer);
         } catch (cleanupErr) {
           console.error("Cleanup/send error:", cleanupErr);
           res.status(500).json({ error: "Error processing audio response." });
