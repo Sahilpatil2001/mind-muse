@@ -4,11 +4,7 @@ import { useNavigate } from "react-router-dom";
 import FormInput from "../components/common/FormInput";
 import Button from "../components/common/Button.tsx";
 import { showSuccessToast, showErrorToast } from "../utils/toastHelper.tsx";
-
-interface LoginDetails {
-  email: string;
-  password: string;
-}
+import type { LoginDetails } from "../types/auth/Login.ts";
 
 const LoginForm: FC = () => {
   const [loginDetails, setLoginDetails] = useState<LoginDetails>({
@@ -77,6 +73,7 @@ const LoginForm: FC = () => {
               type="email"
               name="email"
               value={loginDetails.email}
+              className="w-[40%]"
             />
             <FormInput
               onChange={handleLoginChange}
@@ -84,6 +81,7 @@ const LoginForm: FC = () => {
               type="password"
               name="password"
               value={loginDetails.password}
+              className="w-[40%]"
             />
 
             <div className="flex flex-col gap-5 items-center">

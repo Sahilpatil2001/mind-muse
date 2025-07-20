@@ -82,7 +82,17 @@ const loginUser = async (req, res) => {
   }
 };
 
+const getUser = (req, res) => {
+  if (!req.user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const { _id, firstName, email } = req.user;
+  res.json({ id: _id, firstName, email });
+};
+
 module.exports = {
   register,
   loginUser,
+  getUser,
 };

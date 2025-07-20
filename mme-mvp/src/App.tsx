@@ -5,7 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Route, Routes } from "react-router-dom";
 
 import Home from "./pages/Home";
-import Dashboard from "./pages/Dashboard";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/404";
@@ -15,6 +15,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayout";
 import AuthLayout from "./layouts/AuthLayout";
 import CreateAudio from "./components/CreateAudio";
+import MyAudios from "./components/MyAudios";
+import Dashboard from "./pages/Dashboard";
 
 const App: FC = () => {
   return (
@@ -31,10 +33,10 @@ const App: FC = () => {
             }
           />
           <Route
-            path="/dashboard"
+            path="/my-audios"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <MyAudios />
               </ProtectedRoute>
             }
           />
@@ -43,6 +45,15 @@ const App: FC = () => {
             element={
               <ProtectedRoute>
                 <StepForm />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
               </ProtectedRoute>
             }
           />

@@ -4,17 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
 import FormInput from "../components/common/FormInput";
 import { showErrorToast, showSuccessToast } from "../utils/toastHelper.tsx";
-
-type Gender = "Male" | "Female" | "";
-
-interface UserDetails {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  dob: string;
-  gender: Gender;
-}
+import type { UserDetails } from "../types/auth/Register.ts";
 
 const Register: FC = () => {
   const navigate = useNavigate();
@@ -111,6 +101,7 @@ const Register: FC = () => {
               type="text"
               name="firstName"
               value={userDetails.firstName}
+              className="w-[40%]"
             />
             <FormInput
               onChange={handleChange}
@@ -118,6 +109,7 @@ const Register: FC = () => {
               type="text"
               name="lastName"
               value={userDetails.lastName}
+              className="w-[40%]"
             />
           </div>
 
@@ -128,6 +120,7 @@ const Register: FC = () => {
               type="email"
               name="email"
               value={userDetails.email}
+              className="w-[40%]"
             />
             <FormInput
               onChange={handleChange}
@@ -135,6 +128,7 @@ const Register: FC = () => {
               type="password"
               name="password"
               value={userDetails.password}
+              className="w-[40%]"
             />
           </div>
 
@@ -145,6 +139,7 @@ const Register: FC = () => {
               type="date"
               name="dob"
               value={userDetails.dob}
+              className="w-[40%]"
             />
 
             <select

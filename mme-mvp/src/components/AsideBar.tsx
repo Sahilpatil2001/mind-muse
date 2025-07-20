@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { showSuccessToast } from "../utils/toastHelper";
 import { useNavigate } from "react-router-dom";
+import type { NavItemProps } from "../types/NavItemProps";
 
 import {
   Waves,
@@ -47,7 +48,7 @@ const AsideBar: FC = () => {
           <Link
             to="/"
             className="
-    text-3xl font-semibold mb-10 mt-20 block
+    text-3xl font-semibold mb-10 mt-10 block
     bg-gradient-to-r from-purple-400 to-white
     bg-clip-text text-transparent
     transition duration-300
@@ -71,14 +72,19 @@ const AsideBar: FC = () => {
             icon={<Headphones size={30} />}
             label="My Audios"
             isOpen={isOpen}
-            to="/dashboard"
+            to="/my-audios"
           />
           <NavItem
             icon={<ShoppingBag size={30} />}
             label="Store"
             isOpen={isOpen}
           />
-          <NavItem icon={<User size={30} />} label="Profile" isOpen={isOpen} />
+          <NavItem
+            onClick={() => navigate("/dashboard")}
+            icon={<User size={30} />}
+            label="Profile"
+            isOpen={isOpen}
+          />
         </nav>
       </div>
 
@@ -95,13 +101,13 @@ const AsideBar: FC = () => {
   );
 };
 
-type NavItemProps = {
-  icon: React.ReactNode;
-  label: string;
-  isOpen: boolean;
-  to?: string;
-  onClick?: () => void;
-};
+// type NavItemProps = {
+//   icon: React.ReactNode;
+//   label: string;
+//   isOpen: boolean;
+//   to?: string;
+//   onClick?: () => void;
+// };
 
 const NavItem: FC<NavItemProps> = ({ icon, label, isOpen, to, onClick }) => {
   const content = (

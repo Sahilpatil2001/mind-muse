@@ -1,8 +1,9 @@
 import type { FC } from "react";
 import { useState, useEffect } from "react";
 import Button from "./common/Button";
-import type { Step } from "../types/stepType";
 import { showErrorToast, showSuccessToast } from "../utils/toastHelper";
+import type { Step } from "../types/Step";
+
 const StepForm: FC = () => {
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -255,41 +256,47 @@ const StepForm: FC = () => {
   const progressPercentage = ((currentStepIndex + 1) / steps.length) * 100;
 
   return (
-    <div className="w-[70%] mx-auto border border-gray-800 p-10 rounded-[30px] shadow-md bg-[#030014]">
-      {/* Progress  */}
-      <div className="w-full bg-gray-800 rounded-full h-1 mb-10 overflow-hidden">
-        <div
-          className="bg-purple-600 h-full transition-all duration-500"
-          style={{ width: `${progressPercentage}%` }}
-        />
-      </div>
-      <h2 className="text-xl font-semibold mb-2">
-        Step {currentStep.stepNumber}: {currentStep.stepTitle}
-      </h2>
-      <p className="mb-10 text-gray-500">{currentStep.question}</p>
+    <>
+      <div className="w-full h-screen py-30">
+        <div className="w-[70%] mx-auto border border-gray-800 p-10 rounded-[30px] shadow-md bg-[#030014] ">
+          {/* Progress  */}
+          <div className="w-full bg-gray-800 rounded-full h-1 mb-10 overflow-hidden">
+            <div
+              className="bg-purple-600 h-full transition-all duration-500"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">
+            Step {currentStep.stepNumber}: {currentStep.stepTitle}
+          </h2>
+          <p className="mb-10 text-gray-500">{currentStep.question}</p>
 
-      <div className="input-field mb-8">
-        <div className="space-y-4">{renderField()}</div>
-      </div>
+          <div className="input-field mb-8">
+            <div className="space-y-4">{renderField()}</div>
+          </div>
 
-      <div className="flex justify-between mt-20">
-        <Button
-          onClick={handleBack}
-          disabled={currentStepIndex === 0}
-          className="px-12 py-2 bg-red-700 text-white text-sm rounded hover:bg-red-800 disabled:opacity-50 shadow-red-800"
-        >
-          Back
-        </Button>
-        <Button
-          onClick={
-            currentStepIndex === steps.length - 1 ? handleSubmit : handleNext
-          }
-          className="px-12 py-2 text-white text-sm rounded disabled:opacity-50"
-        >
-          {currentStepIndex === steps.length - 1 ? "Submit" : "Next"}
-        </Button>
+          <div className="flex justify-between mt-20">
+            <Button
+              onClick={handleBack}
+              disabled={currentStepIndex === 0}
+              className="px-12 py-2 bg-red-700 text-white text-sm rounded hover:bg-red-800 disabled:opacity-50 shadow-red-800"
+            >
+              Back
+            </Button>
+            <Button
+              onClick={
+                currentStepIndex === steps.length - 1
+                  ? handleSubmit
+                  : handleNext
+              }
+              className="px-12 py-2 text-white text-sm rounded disabled:opacity-50"
+            >
+              {currentStepIndex === steps.length - 1 ? "Submit" : "Next"}
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -9,18 +9,17 @@ if (!fs.existsSync(audiosDir)) fs.mkdirSync(audiosDir);
 
 exports.mergeDynamicAudio = async (req, res) => {
   try {
-    const { voiceId, text } = req.body;
+    console.log("📥 Received body:", req.body);
 
-    if (!voiceId || !text || typeof text !== "string") {
-      return res.status(400).json({ error: "voiceId and text are required" });
+    const { sentences, voiceId } = req.body;
+
+    if (!voiceId || !Array.isArray(sentences) || sentences.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "voiceId and sentences are required" });
     }
 
-    const rawLines = text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-
-    const sentenceChunks = rawLines.map((line, index, arr) => {
+    const sentenceChunks = sentences.map((line, index, arr) => {
       const pauseMatch = line.match(/\((\d+)s-pause\)/i);
       const pause = pauseMatch ? parseInt(pauseMatch[1], 10) : null;
       const sentence = line.replace(/\(\d+s-pause\)/i, "").trim();

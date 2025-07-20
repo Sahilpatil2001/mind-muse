@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import Button from "../components/common/Button";
-
-type AudioItem = {
-  name: string;
-  url: string;
-};
+import type { AudioItem } from "../types/AudioItem";
 
 const MyAudios: React.FC = () => {
   const [audios, setAudios] = useState<AudioItem[]>([]);
@@ -78,7 +74,7 @@ const MyAudios: React.FC = () => {
   };
 
   return (
-    <main className="w-full text-white flex flex-col ">
+    <main className="w-full text-white flex flex-col py-30">
       <div className="">
         <h1 className="text-3xl font-bold text-white mb-6 text-center">
           My Audio Files

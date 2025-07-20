@@ -7,7 +7,7 @@ const MainLayout: FC = () => {
     <>
       <div className="w-full flex items-center">
         <AsideBar />
-        <div className="w-full flex">
+        <div className="w-full flex h-screen ">
           <Outlet />
         </div>
       </div>

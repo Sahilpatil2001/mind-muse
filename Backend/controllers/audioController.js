@@ -1,28 +1,46 @@
 // controllers/Audio-Controller.js
 
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
+// New Code Using elevenlabs internal pacckage
+const { ElevenLabsClient } = require("@elevenlabs/elevenlabs-js");
 
-const audiosDir = path.join(__dirname, "../audios");
-if (!fs.existsSync(audiosDir)) fs.mkdirSync(audiosDir);
+const client = new ElevenLabsClient({
+  apiKey: process.env.ELEVEN_API_KEY,
+});
 
 exports.getVoices = async (req, res) => {
   try {
-    const response = await axios.get("https://api.elevenlabs.io/v1/voices", {
-      headers: { "xi-api-key": process.env.ELEVEN_API_KEY },
-    });
+    const response = await client.voices.getAll(); // ⬅️ Get all available voices
 
-    // Safely check if voices exist
-    const voices = response.data.voices || [];
+    const voices = response.voices || []; // Safe access
 
-    res.json({ voices }); // ✅ Send only what you need
+    res.json({ voices });
   } catch (err) {
     console.error(
-      "Error fetching ElevenLabs voices:",
-      err.response?.data || err.message
+      "Error fetching voices from ElevenLabs SDK:",
+      err?.response?.data || err.message
     );
     res.status(500).json({ error: "Failed to fetch voices" });
+  }
+};
+
+// Generate Audio
+exports.generateAudio = async (req, res) => {
+  try {
+    const { voiceId, text } = req.body;
+    if (!voiceId || !text) {
+      return res.status(400).json({ error: "voiceId and text are required" });
+    }
+
+    const audioBuffer = await client.textToSpeech.speech({
+      voiceId,
+      text,
+    });
+
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.send(audioBuffer);
+  } catch (err) {
+    console.error("Error generating audio:", err);
+    res.status(500).json({ error: "Failed to generate audio" });
   }
 };
 
